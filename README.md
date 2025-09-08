@@ -4,7 +4,8 @@
  ## Team Members
 - Dimitrios Petrakis, dimitriosp@student.unimelb.edu.au, @mitso2005
 - Farah Abdi, flabdi@student.unimelb.edu.au, @farahAbbdi
-- Name, Email, @GitHub account
+- Lovy Kumar, Lovyk@student.unimelb.edua.au, @Lovyku
+
 
  ## Documentation files
 - Link to Draw.io: https://unimelbcloud-my.sharepoint.com/:u:/r/personal/dimitriosp_student_unimelb_edu_au/Documents/Project1StaticDesignModel.drawio?csf=1&web=1&e=m9m6HT
