@@ -3,7 +3,7 @@
 
  ## Team Members
 - Dimitrios Petrakis, dimitriosp@student.unimelb.edu.au, @mitso2005
-- Name, Email, @GitHub account
+- Farah Abdi, flabdi@student.unimelb.edu.au, @farahAbbdi
 - Name, Email, @GitHub account
 
  ## Documentation files
