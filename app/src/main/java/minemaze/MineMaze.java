@@ -215,6 +215,10 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                 } else {
                     executeNextPathStep();
                 }
+                if (bomber != null) {
+                    bomber.handleMovement();
+                    refresh();
+                }
                 updateLogResult();
                 updateStatusDisplay();
             } catch (InterruptedException e) {
@@ -346,15 +350,10 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     public boolean mouseEvent(GGMouse mouse) {
         Location location = toLocationInGrid(mouse.getX(), mouse.getY());
         if (mouse.getEvent() == GGMouse.lPress) {
-            // Left click: Guide pusher movement (straight lines only)
             guidePusherToLocation(location);
         } else if (mouse.getEvent() == GGMouse.rPress) {
-            // Right click: Place bomb marker at tile
-            // If a bomb is available and Bomber isn't returning, place bomb
-            if (bomber != null && !bomber.isReturningToStart() && bomber.getBombsAvailable() > 0) {
-                bomber.placeBomb(location);
-                // After placing, return to initial position
-                bomber.returnToInitialPosition();
+            if (bomber != null && !bomber.isBusy() && bomber.getBombsAvailable() > 0) {
+                bomber.startMoveToBomb(location);
             }
         }
         return true;
