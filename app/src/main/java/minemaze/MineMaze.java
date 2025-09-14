@@ -54,7 +54,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         }
     }
 
-    private class Pusher extends Actor {
+    protected class Pusher extends Actor {
         private List<String> controls = null;
 
         public Pusher() {
@@ -311,6 +311,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                     bomber = new Bomber(location, maxNumberOfBombs, this);
                     addActor(bomber, location);
                     bomber.setupBomberControls(bomberControls);
+                    bomber.setBorderColor(borderColor);  // Add this line
                 }
             }
         }

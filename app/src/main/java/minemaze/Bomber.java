@@ -3,6 +3,7 @@ package minemaze;
 import ch.aplu.jgamegrid.Actor;
 import ch.aplu.jgamegrid.Location;
 import ch.aplu.jgamegrid.GameGrid;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,8 +17,6 @@ public class Bomber extends Machine {
     private List<String> controls;
     private Location initialLocation;
     private GameGrid grid;
-    private List<Location> path = new ArrayList<>();
-    private int pathIndex = 0;
     private boolean returningToStart = false;
     private boolean movingToBomb = false;
     private BombMarker pendingBombMarker = null;
@@ -48,8 +47,7 @@ public class Bomber extends Machine {
         if (bombsAvailable <= 0 || isBusy())
             return;
         bombTarget = target;
-        path = buildPath(getLocation(), target);
-        pathIndex = 0;
+        startMoveToTarget(target, grid); // Use Machine's path logic
         movingToBomb = true;
         returningToStart = false;
     }
@@ -61,8 +59,7 @@ public class Bomber extends Machine {
         if (movingToBomb) {
             if (stepMove()) { // Arrived at bomb target or blocked
                 placeBombAtCurrentLocation();
-                path = buildPath(getLocation(), initialLocation);
-                pathIndex = 0;
+                startMoveToTarget(initialLocation, grid); // Return home using same logic
                 movingToBomb = false;
                 returningToStart = true;
             }
@@ -78,18 +75,7 @@ public class Bomber extends Machine {
      * @return true if Bomber is busy (either going to bomb or returning home)
      */
     public boolean isBusy() {
-        return movingToBomb || returningToStart;
-    }
-
-    /**
-     * Moves one step along the path. Returns true if reached the end.
-     */
-    public boolean stepMove() {
-        if (path == null || pathIndex >= path.size())
-            return true; // Already at destination
-        setLocation(path.get(pathIndex));
-        pathIndex++;
-        return pathIndex >= path.size(); // Done if just moved to final step
+        return movingToBomb || returningToStart || isMoving;
     }
 
     /**
@@ -101,7 +87,6 @@ public class Bomber extends Machine {
             grid.removeActor(pendingBombMarker);
             pendingBombMarker = null;
         }
-
         if (bombsAvailable <= 0) return;
         Bomb bomb = new Bomb(getLocation(), 6, 1, this, grid);
         bombs.add(bomb);
@@ -139,37 +124,14 @@ public class Bomber extends Machine {
         }
     }
 
-    /**
-     * Build horizontal-then-vertical path, stopping if blocked.
-     */
-    private List<Location> buildPath(Location from, Location to) {
-        List<Location> result = new ArrayList<>();
-        Location current = from;
-        // Horizontal
-        int dx = Integer.compare(to.x, from.x);
-        while (current.x != to.x) {
-            Location step = new Location(current.x + dx, current.y);
-            if (!canMove(step, grid)) break;
-            result.add(step);
-            current = step;
-        }
-        // Vertical
-        int dy = Integer.compare(to.y, current.y);
-        while (current.y != to.y) {
-            Location step = new Location(current.x, current.y + dy);
-            if (!canMove(step, grid)) break;
-            result.add(step);
-            current = step;
-        }
-        return result;
-    }
-
     @Override
     protected boolean canMove(Location location, GameGrid grid) {
-        Actor hardRock = grid.getOneActorAt(location, minemaze.MineMaze.HardRock.class);
-        Actor boulder = grid.getOneActorAt(location, minemaze.MineMaze.Rock.class);
-        Actor wall = grid.getOneActorAt(location, minemaze.MineMaze.Wall.class);
-        return hardRock == null && boulder == null && wall == null;
+        // Additional check for ore - bomber cannot push ore
+        Actor ore = grid.getOneActorAt(location, minemaze.MineMaze.Ore.class);
+        if (ore != null) {
+            return false;
+        }
+        return super.canMove(location, grid);
     }
 
     public int getBombsAvailable() {
