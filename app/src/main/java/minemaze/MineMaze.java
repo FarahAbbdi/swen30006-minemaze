@@ -7,8 +7,6 @@ import java.util.*;
 import java.util.List;
 import java.util.Properties;
 
-import minemaze.Bomber;
-
 public class MineMaze extends GameGrid implements GGMouseListener {
 
     public enum ElementType {
@@ -100,12 +98,6 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     protected class Wall extends Actor {
         public Wall() {
             super("sprites/wall.png");
-        }
-    }
-
-    private class BombMarker extends Actor {
-        public BombMarker() {
-            super("sprites/bomb_marker.png");
         }
     }
 
@@ -353,7 +345,15 @@ public class MineMaze extends GameGrid implements GGMouseListener {
             guidePusherToLocation(location);
         } else if (mouse.getEvent() == GGMouse.rPress) {
             if (bomber != null && !bomber.isBusy() && bomber.getBombsAvailable() > 0) {
+                // Add bomb marker at the clicked location
+                BombMarker marker = new BombMarker();
+                addActor(marker, location);
+                marker.show();
+                refresh(); // update UI
+
+                // Start bomber movement toward the marker
                 bomber.startMoveToBomb(location);
+                bomber.setPendingBombMarker(marker);
             }
         }
         return true;

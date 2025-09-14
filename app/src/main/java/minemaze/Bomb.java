@@ -14,7 +14,7 @@ public class Bomb extends Actor implements Usable {
     private GameGrid grid;
 
     public Bomb(Location location, int fuseTicks, int explosionRadius, Machine placedBy, GameGrid grid) {
-        super("sprites/bomb_marker.png");
+        super("sprites/bomb.png");
         setLocation(location);
         this.fuseTicks = fuseTicks;
         this.explosionRadius = explosionRadius;

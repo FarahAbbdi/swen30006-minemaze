@@ -20,6 +20,7 @@ public class Bomber extends Machine {
     private int pathIndex = 0;
     private boolean returningToStart = false;
     private boolean movingToBomb = false;
+    private BombMarker pendingBombMarker = null;
     private Location bombTarget = null;
 
     public Bomber(Location startLocation, int bombsAvailable, GameGrid grid) {
@@ -34,6 +35,10 @@ public class Bomber extends Machine {
 
     public void setupBomberControls(List<String> bomberControls) {
         this.controls = bomberControls;
+    }
+
+    public void setPendingBombMarker(BombMarker marker) {
+        this.pendingBombMarker = marker;
     }
 
     /**
@@ -91,12 +96,18 @@ public class Bomber extends Machine {
      * Place a bomb at the Bomber's current location.
      */
     private void placeBombAtCurrentLocation() {
+        // Remove bomb marker, if any
+        if (pendingBombMarker != null) {
+            grid.removeActor(pendingBombMarker);
+            pendingBombMarker = null;
+        }
+
         if (bombsAvailable <= 0) return;
         Bomb bomb = new Bomb(getLocation(), 6, 1, this, grid);
         bombs.add(bomb);
         bombsAvailable--;
         grid.addActor(bomb, getLocation());
-        bomb.show();
+        bomb.show(); // show bomb.png
         bomb.use(this);
         grid.refresh();
     }
