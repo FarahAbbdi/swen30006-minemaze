@@ -7,6 +7,8 @@ import java.util.*;
 import java.util.List;
 import java.util.Properties;
 
+import minemaze.Bomber;
+
 public class MineMaze extends GameGrid implements GGMouseListener {
 
     public enum ElementType {
@@ -127,41 +129,6 @@ public class MineMaze extends GameGrid implements GGMouseListener {
 
     public static final String BOMB_COMMAND = "Bomb";
 
-    private class Bomber extends Actor {
-        private List<String> controls = null;
-
-        public Bomber() {
-            super(true, "sprites/bomber.png");  // Rotatable
-        }
-
-        public void setupBomber(List<String> bomberControls) {
-            this.controls = bomberControls;
-        }
-
-        public void autoMoveNext() {
-            if (controls != null && autoMovementIndex < controls.size()) {
-                String currentMove = controls.get(autoMovementIndex);
-                String[] parts = currentMove.split("-");
-                if (currentMove.equals(BOMB_COMMAND)) {
-                    // Place bomb here
-                    System.out.println("Place bomb at current position");
-                    refresh();
-                    return;
-                }
-                if (parts.length == 2) {
-                    int bombX = Integer.parseInt(parts[0]);
-                    int bombY = Integer.parseInt(parts[1]);
-                    bomber.setLocation(new Location(bombX, bombY));
-                    if (isFinished)
-                        return;
-
-                    refresh();
-                }
-            }
-        }
-
-    }
-
     // ------------- End of inner classes ------
     //
     private MapGrid grid;
@@ -248,7 +215,12 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                 if (isAutoMode) {
                     // Execute auto movements based on indices
                     pusher.autoMoveNext();
-                    bomber.autoMoveNext();
+                    bomber.autoMoveNext(
+                            autoMovementIndex,
+                            isFinished,
+                            BOMB_COMMAND,
+                            this::refresh // Pass a Runnable to refresh the UI
+                    );
                     executeNextPathStep();
                     autoMovementIndex++;
                 } else {
