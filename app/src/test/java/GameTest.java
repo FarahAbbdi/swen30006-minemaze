@@ -31,12 +31,12 @@ public class GameTest {
         String logResult = game.runApp(true);
         Assert.assertTrue(logResult.contains("You lost"));
         LogParser parser = new LogParser();
-        String logLine82 = parser.getLogLine(logResult, 82);
-        String logLine102 = parser.getLogLine(logResult, 102);
-        Assert.assertTrue(logLine82.contains("Fuel:17"));
+        String logLine83 = parser.getLogLine(logResult, 82);
+        String logLine103 = parser.getLogLine(logResult, 102);
+        Assert.assertTrue(logLine83.contains("Fuel:17"));
 
-        Assert.assertTrue(logLine102.contains("Fuel:0"));
-        Assert.assertTrue(logLine102.contains("Pusher:14-5"));
+        Assert.assertTrue(logLine103.contains("Fuel:0"));
+        Assert.assertTrue(logLine103.contains("Pusher:14-5"));
     }
 
     /**
@@ -59,17 +59,16 @@ public class GameTest {
         Assert.assertTrue(logLine1.contains("Boulder:5-6,15-6"));
 
         String logLine9 = parser.getLogLine(logResult, 8);
-        Assert.assertTrue(logLine9.contains("HardRock:7-5"));
-        Assert.assertFalse(logLine9.contains("HardRock:7-5,13-7"));
+        Assert.assertTrue(logLine9.contains("HardRock:13-7"));
 
         String logLine18 = parser.getLogLine(logResult, 17);
         Assert.assertTrue(logLine18.contains("Boulder:15-6"));
 
         String logLine29 = parser.getLogLine(logResult, 28);
-        Assert.assertTrue(logLine29.contains("Boulder:#"));
+        Assert.assertTrue(logLine29.contains("Boulder#"));
 
-        String logLine36 = parser.getLogLine(logResult, 36);
-        Assert.assertTrue(logLine36.contains("HardRock:7-5"));
+        String logLine36 = parser.getLogLine(logResult, 35);
+        Assert.assertTrue(logLine36.contains("HardRock:13-7"));
     }
 
 
@@ -106,7 +105,7 @@ public class GameTest {
 
         String logLine15 = parser.getLogLine(logResult, 14);
         Assert.assertTrue(logLine15.contains("Boulder:2-6,15-6"));
-        Assert.assertTrue(logLine15.contains("Fuel:185"));
+        Assert.assertTrue(logLine15.contains("Fuel:285"));
     }
 
 

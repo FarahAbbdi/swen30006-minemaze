@@ -1,0 +1,62 @@
+---
+title: MineMaze Domain Model (Refactored Plus)
+---
+classDiagram
+    %% Abstract base for all map elements
+    class MapElement {
+        <<Abstract>>
+        -int x
+        -int y
+        +getPosition()
+    }
+    class Ore {
+        +isCollected
+    }
+    class Target {
+    }
+    class OreCart {
+    }
+    class HardRock {
+    }
+    class Boulder {
+    }
+    MapElement <|-- Ore
+    MapElement <|-- Target
+    MapElement <|-- OreCart
+    MapElement <|-- HardRock
+    MapElement <|-- Boulder
+
+    %% Core domain classes
+    class MineMaze {
+        -MapGrid mapGrid
+        -Pusher pusher
+        -int gameTick
+        -PropertiesLoader properties
+        +startGame()
+        +endGame()
+    }
+    class MapGrid {
+        -MapElement[] elements
+        +getElementAt(x, y)
+        +setElementAt(x, y, element)
+        +getNeighbors(x, y)
+        +addElement(element)
+        +removeElement(element)
+    }
+    class Pusher {
+        -int x
+        -int y
+    +moveTo(x, y)
+    +pushOre(ore)
+    }
+    class PropertiesLoader {
+        +loadProperties()
+        +getConfig(key)
+    }
+
+    %% Relationships
+    MineMaze *-- MapGrid : "has"
+    MineMaze *-- Pusher : "controls"
+    MineMaze *-- PropertiesLoader : "uses"
+    MapGrid "1" *-- "*" MapElement : "contains"
+    Pusher --> Ore : "pushes"
