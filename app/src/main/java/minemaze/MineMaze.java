@@ -50,7 +50,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         }
     }
 
-    private class Ore extends Actor {
+    protected class Ore extends Actor {
         public Ore() {
             super("sprites/ore.png", 2);
         }
@@ -91,13 +91,13 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     }
 
 
-    private class Rock extends Actor {
+    protected class Rock extends Actor {
         public Rock() {
             super("sprites/rock.png");
         }
     }
 
-    private class Wall extends Actor {
+    protected class Wall extends Actor {
         public Wall() {
             super("sprites/wall.png");
         }
@@ -109,19 +109,19 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         }
     }
 
-    private class Booster extends Actor {
+    protected class Booster extends Actor {
         public Booster() {
             super("sprites/booster.png");
         }
     }
 
-    private class Fuel extends Actor {
+    protected class Fuel extends Actor {
         public Fuel() {
             super("sprites/fuel.png");
         }
     }
 
-    private class HardRock extends Actor {
+    protected class HardRock extends Actor {
         public HardRock() {
             super("sprites/hard_rock.png");
         }
@@ -194,42 +194,28 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         pusherPath = new ArrayList<>();
         currentPathIndex = 0;
 
-        if (isDisplayingUI) {
-            show();
-        }
+        if (isDisplayingUI) show();
 
-        if (isAutoMode) {
-            doRun();
-        }
+        if (isAutoMode) doRun();
 
         double ONE_SECOND = 1000.0;
         double gameTick = 0;
         while (oresCollected < oresWinning && gameDuration >= 0) {
             try {
                 Thread.sleep(simulationPeriod);
-                gameTick ++;
+                gameTick++;
                 double minusDuration = (simulationPeriod / ONE_SECOND);
                 gameDuration -= minusDuration;
-                String title = generateGameTitle(gameDuration);
-                setTitle(title);
+                setTitle(generateGameTitle(gameDuration));
                 if (isAutoMode) {
-                    // Execute auto movements based on indices
                     pusher.autoMoveNext();
-                    bomber.autoMoveNext(
-                            autoMovementIndex,
-                            isFinished,
-                            BOMB_COMMAND,
-                            this::refresh // Pass a Runnable to refresh the UI
-                    );
+                    bomber.autoMoveNext(autoMovementIndex, BOMB_COMMAND, this::refresh);
                     executeNextPathStep();
                     autoMovementIndex++;
                 } else {
-                    // Execute path-guided movement
                     executeNextPathStep();
                 }
                 updateLogResult();
-
-                // Update status display
                 updateStatusDisplay();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -237,7 +223,6 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         }
 
         doPause();
-
         if (oresCollected == oresWinning) {
             setTitle("Mission Complete. Well done!");
             logResult.append("You won");
@@ -245,7 +230,6 @@ public class MineMaze extends GameGrid implements GGMouseListener {
             setTitle("Mission Failed. You ran out of time");
             logResult.append("You lost");
         }
-
         isFinished = true;
         return logResult.toString();
     }
@@ -306,8 +290,6 @@ public class MineMaze extends GameGrid implements GGMouseListener {
      * Draw all different actors on the board: pusher, ore, target, rock, clay, bulldozer, excavator
      */
     private void drawActors() {
-        int targetIndex = 0;
-
         for (int y = 0; y < nbVertCells; y++) {
             for (int x = 0; x < nbHorzCells; x++) {
                 Location location = new Location(x, y);
@@ -320,27 +302,22 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                 if (a == ElementType.TARGET) {
                     addActor(new Target(), location);
                 }
-
                 if (a == ElementType.BOULDER) {
                     addActor(new Rock(), location);
                 }
-
                 if (a == ElementType.BOOSTER) {
                     addActor(new Booster(), location);
                 }
-
                 if (a == ElementType.HARD_ROCK) {
                     addActor(new HardRock(), location);
                 }
-
                 if (a == ElementType.BOMBER) {
-                    bomber = new Bomber();
+                    bomber = new Bomber(location, maxNumberOfBombs, this);
                     addActor(bomber, location);
-                    bomber.setupBomber(bomberControls);
+                    bomber.setupBomberControls(bomberControls);
                 }
             }
         }
-
         setPaintOrder(Target.class);
     }
 
@@ -368,14 +345,18 @@ public class MineMaze extends GameGrid implements GGMouseListener {
 
     public boolean mouseEvent(GGMouse mouse) {
         Location location = toLocationInGrid(mouse.getX(), mouse.getY());
-
         if (mouse.getEvent() == GGMouse.lPress) {
             // Left click: Guide pusher movement (straight lines only)
             guidePusherToLocation(location);
         } else if (mouse.getEvent() == GGMouse.rPress) {
             // Right click: Place bomb marker at tile
+            // If a bomb is available and Bomber isn't returning, place bomb
+            if (bomber != null && !bomber.isReturningToStart() && bomber.getBombsAvailable() > 0) {
+                bomber.placeBomb(location);
+                // After placing, return to initial position
+                bomber.returnToInitialPosition();
+            }
         }
-
         return true;
     }
 
