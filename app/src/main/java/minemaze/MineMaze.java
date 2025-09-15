@@ -665,7 +665,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         List<Actor> heavyRocks = getActors(HardRock.class);
 
         logResult.append(autoMovementIndex + "#");
-        logResult.append(ElementType.PUSHER.getShortType()).append(actorLocations(pushers)).append("-Fuel").append(pusherFuel).append("#");
+        logResult.append(ElementType.PUSHER.getShortType()).append(actorLocations(pushers)).append("-Fuel:").append(pusherFuel).append("#");
         logResult.append(ElementType.ORE.getShortType()).append(actorLocations(ores)).append("#");
         logResult.append(ElementType.TARGET.getShortType()).append(actorLocations(targets)).append("#");
         logResult.append(ElementType.BOULDER.getShortType()).append(actorLocations(rocks)).append("#");
