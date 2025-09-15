@@ -479,6 +479,16 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                     refresh();
                 }
 
+                // [ADD] Pickup & refill if standing on a Fuel tile
+                Fuel can = (Fuel) getOneActorAt(pusher.getLocation(), Fuel.class);
+                if (can != null) {
+                    can.removeSelf();
+                    int before = pusherFuel;
+                    pusherFuel = Math.min(maxFuel, pusherFuel + fuelRefillAmount);
+                    System.out.println("Refueled: +" + (pusherFuel - before) + " (now " + pusherFuel + ")");
+                    updateStatusDisplay();
+                    refresh();
+                }
 
                 // Handle target visibility after movement
                 Target curTarget = (Target) getOneActorAt(pusher.getLocation(), Target.class);
@@ -655,7 +665,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         List<Actor> heavyRocks = getActors(HardRock.class);
 
         logResult.append(autoMovementIndex + "#");
-        logResult.append(ElementType.PUSHER.getShortType()).append(actorLocations(pushers)).append("-Fuel:100").append("#");
+        logResult.append(ElementType.PUSHER.getShortType()).append(actorLocations(pushers)).append("-Fuel").append(pusherFuel).append("#");
         logResult.append(ElementType.ORE.getShortType()).append(actorLocations(ores)).append("#");
         logResult.append(ElementType.TARGET.getShortType()).append(actorLocations(targets)).append("#");
         logResult.append(ElementType.BOULDER.getShortType()).append(actorLocations(rocks)).append("#");
