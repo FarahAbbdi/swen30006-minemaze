@@ -7,13 +7,14 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
-// Abstract class for all vehicles/machines
+/**
+ * Abstract class for machine actors that can move within the maze.
+ * Handles path calculation and step-by-step movement with collision detection.
+ */
 public abstract class Machine extends Actor {
     protected List<Location> movePath = new ArrayList<>();
     protected int movePathIndex = 0;
     protected boolean isMoving = false;
-    protected boolean returningHome = false;
-    protected Location moveTarget = null;
     protected Location initialLocation;
     protected Color borderColor;
 
@@ -21,73 +22,100 @@ public abstract class Machine extends Actor {
         super(rotatable, spritePath);
     }
 
+    /**
+     * Set the border color for collision detection
+     */
     public void setBorderColor(Color borderColor) {
         this.borderColor = borderColor;
     }
 
+    /**
+     * Start movement toward a target location
+     * Calculates a path going horizontally then vertically
+     */
     public void startMoveToTarget(Location target, GameGrid grid) {
         movePath.clear();
         movePathIndex = 0;
-        moveTarget = target;
-        Location currentLoc = getLocation();
-        // Horizontal movement
-        if (currentLoc.x != target.x) {
-            int dx = target.x > currentLoc.x ? 1 : -1;
-            for (int x = currentLoc.x + dx; x != target.x + dx; x += dx) {
-                Location step = new Location(x, currentLoc.y);
-                if (!canMove(step, grid)) {
-                    break; // Stop if path is blocked
-                }
-                movePath.add(step);
+        Location current = getLocation();
+        boolean moveHorizontally = true; // Start with horizontal move
+
+        while (!current.equals(target)) {
+            Location nextStep = null;
+            if (moveHorizontally && current.x != target.x) {
+                int dx = current.x < target.x ? 1 : -1;
+                nextStep = new Location(current.x + dx, current.y);
+            } else if (!moveHorizontally && current.y != target.y) {
+                int dy = current.y < target.y ? 1 : -1;
+                nextStep = new Location(current.x, current.y + dy);
             }
-        }
-        // Vertical movement
-        Location lastHorizontal = movePath.isEmpty() ? currentLoc : movePath.get(movePath.size() - 1);
-        if (lastHorizontal.y != target.y) {
-            int dy = target.y > lastHorizontal.y ? 1 : -1;
-            for (int y = lastHorizontal.y + dy; y != target.y + dy; y += dy) {
-                Location step = new Location(lastHorizontal.x, y);
-                if (!canMove(step, grid)) {
-                    break; // Stop if path is blocked
+
+            if (nextStep != null) {
+                Actor hardrock = grid.getOneActorAt(nextStep, MineMaze.HardRock.class);
+                Actor rock = grid.getOneActorAt(nextStep, MineMaze.Rock.class);
+                Actor ore = grid.getOneActorAt(nextStep, minemaze.MineMaze.Ore.class);
+                Actor wall = grid.getOneActorAt(nextStep, minemaze.MineMaze.Wall.class);
+
+                if (hardrock != null || rock != null) {
+                    // Blocked by hardrock or boulder: stop path here
+                    break;
+                } else if (ore != null || wall != null) {
+                    // Blocked by ore or wall: skip this direction, try the other axis next
+                    moveHorizontally = !moveHorizontally;
+                    continue;
+                } else if (canMove(nextStep, grid)) {
+                    movePath.add(nextStep);
+                    current = nextStep;
+                } else {
+                    // Unknown block, stop
+                    break;
                 }
-                movePath.add(step);
             }
+            moveHorizontally = !moveHorizontally; // Alternate axis
         }
         isMoving = !movePath.isEmpty();
     }
 
+    /**
+     * Move one step along the calculated path
+     * @return true if reached end of path or no more movement possible
+     */
     public boolean stepMove() {
-        if (isMoving && movePathIndex < movePath.size()) {
-            setLocation(movePath.get(movePathIndex++));
-            return movePathIndex >= movePath.size(); // Return true when we just moved to the final position
-        } else if (isMoving) {
+        if (!isMoving || movePathIndex >= movePath.size()) {
             isMoving = false;
-            movePath.clear();
-            movePathIndex = 0;
-            return true; // Arrived
+            return true;  // Done moving
         }
-        return false;
+
+        setLocation(movePath.get(movePathIndex++));
+
+        if (movePathIndex >= movePath.size()) {
+            isMoving = false;
+            return true;  // Reached end of path
+        }
+
+        return false;  // Not done yet
     }
 
+    /**
+     * Check if this machine can move to the specified location
+     */
     protected boolean canMove(Location location, GameGrid grid) {
-        // Check border color
+        // Check for border color
         if (borderColor != null && grid.getBg().getColor(location).equals(borderColor)) {
             return false;
         }
 
-        // Check for obstacles
-        Actor hardRock = grid.getOneActorAt(location, minemaze.MineMaze.HardRock.class);
-        Actor boulder = grid.getOneActorAt(location, minemaze.MineMaze.Rock.class);
+        // Check for walls and rocks
         Actor wall = grid.getOneActorAt(location, minemaze.MineMaze.Wall.class);
-        Actor bomber = grid.getOneActorAt(location, Bomber.class);
-        Actor pusher = grid.getOneActorAt(location, grid.getClass().getDeclaredClasses()[0]); // Assuming Pusher is the first inner class
+        Actor rock = grid.getOneActorAt(location, minemaze.MineMaze.Rock.class);
+        Actor hardRock = grid.getOneActorAt(location, minemaze.MineMaze.HardRock.class);
 
-        // Don't allow movement onto another machine or obstacle
-        return hardRock == null && boulder == null && wall == null &&
-                (bomber == null || bomber == this) && (pusher == null || pusher == this);
+        return wall == null && rock == null && hardRock == null;
     }
 
+    /**
+     * Check if machine is currently moving
+     */
     public boolean isBusy() {
-        return isMoving || returningHome;
+        return isMoving;
     }
 }
