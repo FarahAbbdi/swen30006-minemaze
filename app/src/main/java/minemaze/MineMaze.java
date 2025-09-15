@@ -189,6 +189,11 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     private int maxFuel = 100; // Assumption here !! that fuel capacity is is limited to 100
     private int fuelRefillAmount = 100;
 
+
+    // Feature 3: Booster pick up state (Not activated yet)
+    private boolean boosterReady = false;   // true after pickup, before use
+    private int boosterCharges = 0;         // will be 3 when picked, decremented later when used
+
     public MineMaze(Properties properties, MapGrid grid) {
         super(grid.getNbHorzCells(), grid.getNbVertCells(), 30, false);
         this.grid = grid;
@@ -479,7 +484,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                     refresh();
                 }
 
-                // [ADD] Pickup & refill if standing on a Fuel tile
+                // Pickup & refill if standing on a Fuel tile
                 Fuel can = (Fuel) getOneActorAt(pusher.getLocation(), Fuel.class);
                 if (can != null) {
                     can.removeSelf();
@@ -488,6 +493,21 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                     System.out.println("Refueled: +" + (pusherFuel - before) + " (now " + pusherFuel + ")");
                     updateStatusDisplay();
                     refresh();
+                }
+
+                // Booster pickup (print + disappear)
+                Booster booster = (Booster) getOneActorAt(pusher.getLocation(), Booster.class);
+                if (booster != null) {
+                    if (!boosterReady && boosterCharges == 0) {   // TODO: Add logic for can be picked up when already activated
+                        booster.removeSelf();
+                        boosterReady = true;
+                        boosterCharges = 3;
+                        System.out.println("Booster picked up: ready with 3 charges.");
+                        updateStatusDisplay();
+                        refresh();
+                    } else {
+                        System.out.println("Booster ignored: already holding one.");
+                    }
                 }
 
                 // Handle target visibility after movement
