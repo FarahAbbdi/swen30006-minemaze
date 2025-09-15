@@ -505,7 +505,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                 if (can != null) {
                     can.removeSelf();
                     int before = pusherFuel;
-                    pusherFuel = Math.min(maxFuel, pusherFuel + fuelRefillAmount);
+                    pusherFuel = pusherFuel + fuelRefillAmount;
                     System.out.println("Refueled: +" + (pusherFuel - before) + " (now " + pusherFuel + ")");
                     updateStatusDisplay();
                     refresh();
