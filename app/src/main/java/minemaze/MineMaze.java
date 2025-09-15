@@ -193,6 +193,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     // Feature 3: Booster pick up state (Not activated yet)
     private boolean boosterReady = false;   // true after pickup, before use
     private int boosterCharges = 0;         // will be 3 when picked, decremented later when used
+    private boolean boosterActivated = false; // flips true on first use
 
     public MineMaze(Properties properties, MapGrid grid) {
         super(grid.getNbHorzCells(), grid.getNbVertCells(), 30, false);
@@ -479,6 +480,13 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                 Location pushTo = nextStep.getNeighbourLocation(pusher.getDirection());
                 if (canMove(pushTo)) {
                     rockAtNext.setLocation(pushTo);
+
+                    // Mark activation on first use
+                    if (!boosterActivated && boosterCharges == 3) {
+                        boosterActivated = true;
+                        System.out.println("Booster activated!");
+                    }
+
                     boosterCharges--;
                     if (boosterCharges == 0) {
                         boosterReady = false;
@@ -514,10 +522,14 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                 // Booster pickup (print + disappear)
                 Booster booster = (Booster) getOneActorAt(pusher.getLocation(), Booster.class);
                 if (booster != null) {
-                    if (!boosterReady && boosterCharges == 0) {   // TODO: Add logic for can be picked up when already activated
+                    // Allow pickup if no booster is held and either:
+                    // - the previous one was fully expired, OR
+                    // - the previous one was activated at least once
+                    if (!boosterReady && boosterCharges == 0 || boosterActivated) {
                         booster.removeSelf();
                         boosterReady = true;
                         boosterCharges = 3;
+                        boosterActivated = false;
                         System.out.println("Booster picked up: ready with 3 charges.");
                         updateStatusDisplay();
                         refresh();
