@@ -43,8 +43,11 @@ public abstract class Machine extends Actor {
 
         while (!current.equals(target)) {
             boolean moved = false;
-            for (int i = 0; i < 2; i++) { // Try both axes
+
+            // Try both axes (horizontal and vertical)
+            for (int attempt = 0; attempt < 2; attempt++) {
                 Location nextStep = null;
+
                 if (moveHorizontally && current.x != target.x) {
                     int dx = current.x < target.x ? 1 : -1;
                     nextStep = new Location(current.x + dx, current.y);
@@ -60,28 +63,41 @@ public abstract class Machine extends Actor {
                     Actor wall = grid.getOneActorAt(nextStep, minemaze.MineMaze.Wall.class);
 
                     if (hardrock != null || rock != null) {
-                        // Blocked by hardrock or boulder: stop path here
-                        isMoving = !movePath.isEmpty();
+                        // Hit hardrock or rock - stop here and allow bomb drop only if we've moved
+                        isMoving = movePath.size() > 1;
                         return;
-                    } else if (ore != null || wall != null) {
-                        // Blocked by ore or wall: try the other axis
+                    } else if (wall != null) {
+                        // Hit wall - try the other axis instead of stopping
+                        moveHorizontally = !moveHorizontally;
+                        continue;
+                    } else if (ore != null) {
+                        // Hit ore - try the other axis (bomber can't push ore)
                         moveHorizontally = !moveHorizontally;
                         continue;
                     } else if (canMove(nextStep, grid)) {
+                        // Path is clear - move to this location
                         movePath.add(nextStep);
                         current = nextStep;
                         moved = true;
                         break;
                     } else {
-                        // Unknown block, stop
-                        isMoving = !movePath.isEmpty();
-                        return;
+                        // Other obstacle - try the other axis
+                        moveHorizontally = !moveHorizontally;
+                        continue;
                     }
                 }
-                moveHorizontally = !moveHorizontally; // Alternate axis
+
+                // Switch to the other axis for next attempt
+                moveHorizontally = !moveHorizontally;
             }
-            if (!moved) break; // No move possible, stop
+
+            if (!moved) {
+                // No movement possible in either direction - stop
+                break;
+            }
         }
+
+        // Set moving state based on whether we have a valid path
         isMoving = movePath.size() > 1;
     }
 
