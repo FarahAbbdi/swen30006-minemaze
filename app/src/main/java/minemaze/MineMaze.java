@@ -184,6 +184,11 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     private int maxNumberOfBombs;
     private int autoMovementIndex = 0;
 
+    // Feature 2: Fuel pack attributes
+    private int pusherFuel = 100;  // start at 100 for now
+    private int maxFuel = 100; // Assumption here !! that fuel capacity is is limited to 100
+    private int fuelRefillAmount = 100;
+
     public MineMaze(Properties properties, MapGrid grid) {
         super(grid.getNbHorzCells(), grid.getNbVertCells(), 30, false);
         this.grid = grid;
@@ -445,6 +450,14 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     }
 
     private void executeNextPathStep() {
+        // Early out if out of fuel
+        if (pusherFuel <= 0) {
+            pusherPath.clear();
+            currentPathIndex = 0;
+            refresh();
+            return;
+        }
+
         if (currentPathIndex < pusherPath.size()) {
             Location nextStep = pusherPath.get(currentPathIndex);
             Location currentLoc = pusher.getLocation();
@@ -458,6 +471,15 @@ public class MineMaze extends GameGrid implements GGMouseListener {
             if (canMoveWithOrePushing(nextStep)) {
                 pusher.setLocation(nextStep);
 
+                // Spend  1 fuel for this successful step
+                if (pusherFuel > 0) {
+                    pusherFuel--;
+                    System.out.println("Pusher fuel: " + pusherFuel);
+                    updateStatusDisplay();
+                    refresh();
+                }
+
+
                 // Handle target visibility after movement
                 Target curTarget = (Target) getOneActorAt(pusher.getLocation(), Target.class);
                 if (curTarget != null) {
@@ -465,6 +487,12 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                 }
 
                 currentPathIndex += 1;
+
+                // stop following the path if we ran out of fuel
+                if (pusherFuel == 0) {
+                    pusherPath.clear();
+                    currentPathIndex = 0;
+                }
                 refresh();
             } else {
                 // Clear path if blocked
