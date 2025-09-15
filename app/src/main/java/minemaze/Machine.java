@@ -37,42 +37,52 @@ public abstract class Machine extends Actor {
         movePath.clear();
         movePathIndex = 0;
         Location current = getLocation();
+        movePath.add(current); // Add initial position to path
+
         boolean moveHorizontally = true; // Start with horizontal move
 
         while (!current.equals(target)) {
-            Location nextStep = null;
-            if (moveHorizontally && current.x != target.x) {
-                int dx = current.x < target.x ? 1 : -1;
-                nextStep = new Location(current.x + dx, current.y);
-            } else if (!moveHorizontally && current.y != target.y) {
-                int dy = current.y < target.y ? 1 : -1;
-                nextStep = new Location(current.x, current.y + dy);
-            }
-
-            if (nextStep != null) {
-                Actor hardrock = grid.getOneActorAt(nextStep, MineMaze.HardRock.class);
-                Actor rock = grid.getOneActorAt(nextStep, MineMaze.Rock.class);
-                Actor ore = grid.getOneActorAt(nextStep, minemaze.MineMaze.Ore.class);
-                Actor wall = grid.getOneActorAt(nextStep, minemaze.MineMaze.Wall.class);
-
-                if (hardrock != null || rock != null) {
-                    // Blocked by hardrock or boulder: stop path here
-                    break;
-                } else if (ore != null || wall != null) {
-                    // Blocked by ore or wall: skip this direction, try the other axis next
-                    moveHorizontally = !moveHorizontally;
-                    continue;
-                } else if (canMove(nextStep, grid)) {
-                    movePath.add(nextStep);
-                    current = nextStep;
-                } else {
-                    // Unknown block, stop
-                    break;
+            boolean moved = false;
+            for (int i = 0; i < 2; i++) { // Try both axes
+                Location nextStep = null;
+                if (moveHorizontally && current.x != target.x) {
+                    int dx = current.x < target.x ? 1 : -1;
+                    nextStep = new Location(current.x + dx, current.y);
+                } else if (!moveHorizontally && current.y != target.y) {
+                    int dy = current.y < target.y ? 1 : -1;
+                    nextStep = new Location(current.x, current.y + dy);
                 }
+
+                if (nextStep != null) {
+                    Actor hardrock = grid.getOneActorAt(nextStep, minemaze.MineMaze.HardRock.class);
+                    Actor rock = grid.getOneActorAt(nextStep, minemaze.MineMaze.Rock.class);
+                    Actor ore = grid.getOneActorAt(nextStep, minemaze.MineMaze.Ore.class);
+                    Actor wall = grid.getOneActorAt(nextStep, minemaze.MineMaze.Wall.class);
+
+                    if (hardrock != null || rock != null) {
+                        // Blocked by hardrock or boulder: stop path here
+                        isMoving = !movePath.isEmpty();
+                        return;
+                    } else if (ore != null || wall != null) {
+                        // Blocked by ore or wall: try the other axis
+                        moveHorizontally = !moveHorizontally;
+                        continue;
+                    } else if (canMove(nextStep, grid)) {
+                        movePath.add(nextStep);
+                        current = nextStep;
+                        moved = true;
+                        break;
+                    } else {
+                        // Unknown block, stop
+                        isMoving = !movePath.isEmpty();
+                        return;
+                    }
+                }
+                moveHorizontally = !moveHorizontally; // Alternate axis
             }
-            moveHorizontally = !moveHorizontally; // Alternate axis
+            if (!moved) break; // No move possible, stop
         }
-        isMoving = !movePath.isEmpty();
+        isMoving = movePath.size() > 1;
     }
 
     /**
