@@ -473,6 +473,22 @@ public class MineMaze extends GameGrid implements GGMouseListener {
             else if (nextStep.y > currentLoc.y) pusher.setDirection(Location.SOUTH);
             else if (nextStep.y < currentLoc.y) pusher.setDirection(Location.NORTH);
 
+            // Booster boulder-push (1 tile) before normal movement
+            Rock rockAtNext = (Rock) getOneActorAt(nextStep, Rock.class);
+            if (rockAtNext != null && boosterReady && boosterCharges > 0) {
+                Location pushTo = nextStep.getNeighbourLocation(pusher.getDirection());
+                if (canMove(pushTo)) {
+                    rockAtNext.setLocation(pushTo);
+                    boosterCharges--;
+                    if (boosterCharges == 0) {
+                        boosterReady = false;
+                        System.out.println("Booster used: 0 charges left (expired).");
+                    } else {
+                        System.out.println("Booster used: " + boosterCharges + " charges left.");
+                    }
+                }
+            }
+
             if (canMoveWithOrePushing(nextStep)) {
                 pusher.setLocation(nextStep);
 
@@ -659,6 +675,26 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         Bomber bomber = (Bomber) getOneActorAt(location, Bomber.class);
         // Check if heavy rock requires strength booster
         if (heavyRock != null) {
+            return false;
+        }
+
+        // If there is a Rock on the target tile and we have booster charges,
+        // allow planning the step ONLY if the cell behind that rock is free.
+        if (rock != null && boosterReady && boosterCharges > 0 && pusher != null) {
+            Location pLoc = pusher.getLocation();
+            int dx = Integer.compare(location.x, pLoc.x);
+            int dy = Integer.compare(location.y, pLoc.y);
+            if (Math.abs(dx) + Math.abs(dy) == 1) {
+                Location pushTo = new Location(location.x + dx, location.y + dy);
+                Color c2 = getBg().getColor(pushTo);
+                if (!c2.equals(borderColor)
+                        && getOneActorAt(pushTo, Rock.class) == null
+                        && getOneActorAt(pushTo, Wall.class) == null
+                        && getOneActorAt(pushTo, HardRock.class) == null
+                        && getOneActorAt(pushTo, Bomber.class) == null) {
+                    return true;
+                }
+            }
             return false;
         }
 
