@@ -192,6 +192,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
 
         double ONE_SECOND = 1000.0;
         double gameTick = 0;
+        // Updated section of the main game loop in MineMaze.runApp()
         while (oresCollected < oresWinning && gameDuration >= 0) {
             try {
                 Thread.sleep(simulationPeriod);
@@ -199,20 +200,39 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                 double minusDuration = (simulationPeriod / ONE_SECOND);
                 gameDuration -= minusDuration;
                 setTitle(generateGameTitle(gameDuration));
+
                 if (isAutoMode) {
+                    // Process pusher auto movement
                     pusher.autoMoveNext();
-                    bomber.autoMoveNext(autoMovementIndex, BOMB_COMMAND, this::refresh);
+
+                    // Process bomber auto movement - but don't increment index yet
+                    if (bomber != null) {
+                        bomber.autoMoveNext(autoMovementIndex, BOMB_COMMAND, this::refresh);
+                    }
+
+                    // Execute pusher path movement
                     executeNextPathStep();
+
+                    // Increment movement index for next iteration
                     autoMovementIndex++;
                 } else {
+                    // Manual mode - just execute pusher path steps
                     executeNextPathStep();
                 }
+
+                // Handle bomber movement in both modes (this processes the step-by-step movement)
                 if (bomber != null) {
                     bomber.handleMovement();
-                    refresh();
                 }
+
+                // Update all active bombs (tick countdown)
+                updateBombs();
+
+                // Update display
+                refresh();
                 updateLogResult();
                 updateStatusDisplay();
+
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -537,6 +557,29 @@ public class MineMaze extends GameGrid implements GGMouseListener {
             current = current.getNeighbourLocation(direction);
         }
         return current;
+    }
+
+    /**
+     * Update all active bombs - called each game tick
+     */
+    private void updateBombs() {
+        if (bomber == null) return;
+
+        List<Bomb> bombs = bomber.getBombs();
+
+        // Create a copy to avoid concurrent modification during iteration
+        List<Bomb> bombsCopy = new ArrayList<>(bombs);
+
+        for (Bomb bomb : bombsCopy) {
+            if (bomb.isActive()) {
+                bomb.tick();
+
+                // Remove exploded bombs from the bomber's list
+                if (!bomb.isActive()) {
+                    bombs.remove(bomb);
+                }
+            }
+        }
     }
 
     /**

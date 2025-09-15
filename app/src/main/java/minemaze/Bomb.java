@@ -3,22 +3,22 @@ package minemaze;
 import ch.aplu.jgamegrid.Actor;
 import ch.aplu.jgamegrid.Location;
 import ch.aplu.jgamegrid.GameGrid;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class Bomb extends Actor implements Usable {
-    private int fuseTicks;
+    private int fuseTicksRemaining;
     private int explosionRadius;
     private boolean isActive;
+    private boolean isArmed;
     private Machine placedBy;
     private GameGrid grid;
 
     public Bomb(Location location, int fuseTicks, int explosionRadius, Machine placedBy, GameGrid grid) {
         super("sprites/bomb.png");
         setLocation(location);
-        this.fuseTicks = fuseTicks;
+        this.fuseTicksRemaining = fuseTicks;
         this.explosionRadius = explosionRadius;
         this.isActive = true;
+        this.isArmed = false;
         this.placedBy = placedBy;
         this.grid = grid;
     }
@@ -28,23 +28,31 @@ public class Bomb extends Actor implements Usable {
         arm();
     }
 
-    // Starts fuse countdown and triggers explosion after fuseTicks
+    // Arms the bomb to start countdown
     public void arm() {
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                explode();
-            }
-        }, fuseTicks * 1000); // Each tick = 1s, adjust as needed
+        isArmed = true;
+    }
+
+    // Called each game tick to update the bomb state
+    public void tick() {
+        if (!isActive || !isArmed) return;
+
+        fuseTicksRemaining--;
+
+        if (fuseTicksRemaining <= 0) {
+            explode();
+        }
     }
 
     public void explode() {
         if (!isActive) return;
+
         isActive = false;
+
         // Remove obstacles in radius and reveal resources
         int x0 = getLocation().x;
         int y0 = getLocation().y;
+
         for (int dx = -explosionRadius; dx <= explosionRadius; dx++) {
             for (int dy = -explosionRadius; dy <= explosionRadius; dy++) {
                 int x = x0 + dx;
@@ -66,12 +74,23 @@ public class Bomb extends Actor implements Usable {
                 if (fuel != null) fuel.show();
             }
         }
+
         System.out.println("Bomb exploded at " + getLocation() + " with radius " + explosionRadius);
-        hide();
+
+        // Remove the bomb from the grid
+        grid.removeActor(this);
     }
 
     public boolean isActive() {
         return isActive;
+    }
+
+    public boolean isArmed() {
+        return isArmed;
+    }
+
+    public int getFuseTicksRemaining() {
+        return fuseTicksRemaining;
     }
 
     public int getExplosionRadius() {
