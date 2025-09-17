@@ -143,6 +143,17 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     private int maxNumberOfBombs;
     private int autoMovementIndex = 0;
 
+    // Feature 2: Fuel pack attributes
+    private int pusherFuel = 100;  // start at 100 for now
+    private int maxFuel = 100; // Assumption here !! that fuel capacity is is limited to 100
+    private int fuelRefillAmount = 100;
+
+
+    // Feature 3: Booster pick up state (Not activated yet)
+    private boolean boosterReady = false;   // true after pickup, before use
+    private int boosterCharges = 0;         // will be 3 when picked, decremented later when used
+    private boolean boosterActivated = false; // flips true on first use
+
     public MineMaze(Properties properties, MapGrid grid) {
         super(grid.getNbHorzCells(), grid.getNbVertCells(), 30, false);
         this.grid = grid;
@@ -416,6 +427,14 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     }
 
     private void executeNextPathStep() {
+        // Early out if out of fuel
+        if (pusherFuel <= 0) {
+            pusherPath.clear();
+            currentPathIndex = 0;
+            refresh();
+            return;
+        }
+
         if (currentPathIndex < pusherPath.size()) {
             Location nextStep = pusherPath.get(currentPathIndex);
             Location currentLoc = pusher.getLocation();
@@ -426,8 +445,69 @@ public class MineMaze extends GameGrid implements GGMouseListener {
             else if (nextStep.y > currentLoc.y) pusher.setDirection(Location.SOUTH);
             else if (nextStep.y < currentLoc.y) pusher.setDirection(Location.NORTH);
 
+            // Booster boulder-push (1 tile) before normal movement
+            Rock rockAtNext = (Rock) getOneActorAt(nextStep, Rock.class);
+            if (rockAtNext != null && boosterReady && boosterCharges > 0) {
+                Location pushTo = nextStep.getNeighbourLocation(pusher.getDirection());
+                if (canMove(pushTo)) {
+                    rockAtNext.setLocation(pushTo);
+
+                    // Mark activation on first use
+                    if (!boosterActivated && boosterCharges == 3) {
+                        boosterActivated = true;
+                        System.out.println("Booster activated!");
+                    }
+
+                    boosterCharges--;
+                    if (boosterCharges == 0) {
+                        boosterReady = false;
+                        System.out.println("Booster used: 0 charges left (expired).");
+                    } else {
+                        System.out.println("Booster used: " + boosterCharges + " charges left.");
+                    }
+                }
+            }
+
             if (canMoveWithOrePushing(nextStep)) {
                 pusher.setLocation(nextStep);
+
+                // Spend  1 fuel for this successful step
+                if (pusherFuel > 0) {
+                    pusherFuel--;
+                    System.out.println("Pusher fuel: " + pusherFuel);
+                    updateStatusDisplay();
+                    refresh();
+                }
+
+                // Pickup & refill if standing on a Fuel tile
+                Fuel can = (Fuel) getOneActorAt(pusher.getLocation(), Fuel.class);
+                if (can != null) {
+                    can.removeSelf();
+                    int before = pusherFuel;
+                    pusherFuel = pusherFuel + fuelRefillAmount;
+                    System.out.println("Refueled: +" + (pusherFuel - before) + " (now " + pusherFuel + ")");
+                    updateStatusDisplay();
+                    refresh();
+                }
+
+                // Booster pickup (print + disappear)
+                Booster booster = (Booster) getOneActorAt(pusher.getLocation(), Booster.class);
+                if (booster != null) {
+                    // Allow pickup if no booster is held and either:
+                    // - the previous one was fully expired, OR
+                    // - the previous one was activated at least once
+                    if (!boosterReady && boosterCharges == 0 || boosterActivated) {
+                        booster.removeSelf();
+                        boosterReady = true;
+                        boosterCharges = 3;
+                        boosterActivated = false;
+                        System.out.println("Booster picked up: ready with 3 charges.");
+                        updateStatusDisplay();
+                        refresh();
+                    } else {
+                        System.out.println("Booster ignored: already holding one.");
+                    }
+                }
 
                 // Handle target visibility after movement
                 Target curTarget = (Target) getOneActorAt(pusher.getLocation(), Target.class);
@@ -436,6 +516,12 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                 }
 
                 currentPathIndex += 1;
+
+                // stop following the path if we ran out of fuel
+                if (pusherFuel == 0) {
+                    pusherPath.clear();
+                    currentPathIndex = 0;
+                }
                 refresh();
             } else {
                 // Clear path if blocked
@@ -593,6 +679,26 @@ public class MineMaze extends GameGrid implements GGMouseListener {
             return false;
         }
 
+        // If there is a Rock on the target tile and we have booster charges,
+        // allow planning the step ONLY if the cell behind that rock is free.
+        if (rock != null && boosterReady && boosterCharges > 0 && pusher != null) {
+            Location pLoc = pusher.getLocation();
+            int dx = Integer.compare(location.x, pLoc.x);
+            int dy = Integer.compare(location.y, pLoc.y);
+            if (Math.abs(dx) + Math.abs(dy) == 1) {
+                Location pushTo = new Location(location.x + dx, location.y + dy);
+                Color c2 = getBg().getColor(pushTo);
+                if (!c2.equals(borderColor)
+                        && getOneActorAt(pushTo, Rock.class) == null
+                        && getOneActorAt(pushTo, Wall.class) == null
+                        && getOneActorAt(pushTo, HardRock.class) == null
+                        && getOneActorAt(pushTo, Bomber.class) == null) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         if (c.equals(borderColor) || rock != null || wall != null || bomber != null)
             return false;
 
@@ -616,7 +722,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         List<Actor> heavyRocks = getActors(HardRock.class);
 
         logResult.append(autoMovementIndex + "#");
-        logResult.append(ElementType.PUSHER.getShortType()).append(actorLocations(pushers)).append("-Fuel:100").append("#");
+        logResult.append(ElementType.PUSHER.getShortType()).append(actorLocations(pushers)).append("-Fuel:").append(pusherFuel).append("#");
         logResult.append(ElementType.ORE.getShortType()).append(actorLocations(ores)).append("#");
         logResult.append(ElementType.TARGET.getShortType()).append(actorLocations(targets)).append("#");
         logResult.append(ElementType.BOULDER.getShortType()).append(actorLocations(rocks)).append("#");
