@@ -206,20 +206,11 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                     pusher.autoMoveNext();
 
                     // Process bomber auto movement
-                    if (bomber != null) {
-                        boolean commandProcessed = bomber.autoMoveNext(autoMovementIndex, BOMB_COMMAND, this::refresh);
-
-                        // Only increment if command was fully processed
-                        if (commandProcessed) {
-                            autoMovementIndex++;
-                        }
-                    } else {
-                        // No bomber, still increment to keep pusher and bomber in sync
-                        autoMovementIndex++;
-                    }
+                    bomber.autoMoveNext(autoMovementIndex, BOMB_COMMAND, this::refresh);
 
                     // Execute pusher path movement
                     executeNextPathStep();
+
                     // Increment movement index for next iteration
                     autoMovementIndex++;
                 } else {
@@ -572,18 +563,13 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     private void updateBombs() {
         if (bomber == null) return;
 
-        List<Bomb> bombs = bomber.getBombs();
-
-        // Create a copy to avoid concurrent modification during iteration
-        List<Bomb> bombsCopy = new ArrayList<>(bombs);
-
-        for (Bomb bomb : bombsCopy) {
+        Iterator<Bomb> it = bomber.getBombs().iterator();
+        while (it.hasNext()) {
+            Bomb bomb = it.next();
             if (bomb.isActive()) {
                 bomb.tick();
-
-                // Remove exploded bombs from the bomber's list
                 if (!bomb.isActive()) {
-                    bombs.remove(bomb);
+                    it.remove();
                 }
             }
         }

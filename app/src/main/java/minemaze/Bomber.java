@@ -12,13 +12,13 @@ import java.util.List;
  */
 public class Bomber extends Machine {
     private int bombsAvailable;
-    private List<Bomb> bombs;
+    private final List<Bomb> bombs;
     private List<String> controls;
-    private GameGrid grid;
+    private final GameGrid grid;
     private boolean returningToStart = false;
     private boolean movingToBomb = false;
     private BombMarker pendingBombMarker = null;
-    private Location bombTarget = null;
+    private Location bombTarget;
 
     public Bomber(Location startLocation, int bombsAvailable, GameGrid grid) {
         super(true, "sprites/bomber.png");
@@ -59,10 +59,10 @@ public class Bomber extends Machine {
         if (movingToBomb) {
             if (stepMove()) {
                 // Reached destination or stopped due to obstacle
-                placeBombAtCurrentLocation();
 
                 if (returningToStart) {
-                    // Manual mode: return home using the same path in reverse
+                    // Manual mode: drop bomb and return home using the same path in reverse
+                    placeBombAtCurrentLocation();
                     movePath.clear();
                     if (outboundPath != null) {
                         movePath.addAll(reversePath(outboundPath));
@@ -71,7 +71,7 @@ public class Bomber extends Machine {
                     }
                     movingToBomb = false;
                 } else {
-                    // Auto mode: movement complete, ready for next command
+                    // Auto mode: movement complete, ready for next command (no bomb dropping here)
                     movingToBomb = false;
                     bombTarget = null;
                 }
@@ -91,11 +91,11 @@ public class Bomber extends Machine {
     }
 
     /**
-     * @return true if Bomber is busy (either going to bomb or returning home)
+     * @return true if Bomber is busy (not used in auto mode)
      */
     @Override
     public boolean isBusy() {
-        return movingToBomb || returningToStart || isMoving;
+        return movingToBomb || returningToStart; // Remove isMoving check for auto mode
     }
 
     /**
@@ -108,38 +108,48 @@ public class Bomber extends Machine {
             pendingBombMarker = null;
         }
 
-        if (bombsAvailable <= 0) return;
+        if (bombsAvailable <= 0) {
+            return;
+        }
 
         Bomb bomb = new Bomb(getLocation(), 6, 1, this, grid);
         bombs.add(bomb);
         bombsAvailable--;
         grid.addActor(bomb, getLocation());
+        System.out.println("[Bomber Debug] Placing bomb at " + getLocation() + " (Bombs left after placing: " + bombsAvailable + ")");
         bomb.show();
         bomb.use(this);
         grid.refresh();
     }
 
     /**
-     * For auto mode: process movement commands and bomb placement using same logic as manual mode
-     * Returns true if command was processed and we can move to next command
+     * For auto mode: process movement commands and bomb placement
+     * Execute exactly one command per tick
+     * Returns true if command was processed, and we can move to next command
      */
     public boolean autoMoveNext(int autoMovementIndex, String bombCommand, Runnable refresh) {
         if (controls == null || autoMovementIndex >= controls.size()) {
-            return false; // No more commands
+            return false;
         }
 
         String currentMove = controls.get(autoMovementIndex);
 
-        // Check if this is a bomb command
+        // --- DEBUG LOG ---
+        System.out.println("[Bomber Debug] Command #" + autoMovementIndex + ": '" + currentMove +
+                "', Bomber at: " + getLocation() + ", Bombs left: " + bombsAvailable);
+
+        // Bomb command: place bomb at current location (no movement this tick)
         if (currentMove.equals(bombCommand)) {
             if (bombsAvailable > 0) {
                 placeBombAtCurrentLocation();
                 refresh.run();
+            } else {
+                System.out.println("[Bomber Debug] No bombs available for bomb command - no action this tick");
             }
-            return true; // Command processed
+            return true; // Command processed, move to next command
         }
 
-        // Process movement command (format: "x-y")
+        // Movement command (format: x-y): move one step toward target
         String[] parts = currentMove.split("-");
         if (parts.length == 2) {
             try {
@@ -147,35 +157,51 @@ public class Bomber extends Machine {
                 int targetY = Integer.parseInt(parts[1]);
                 Location targetLocation = new Location(targetX, targetY);
 
-                // Check if we're already at the target location
-                if (getLocation().equals(targetLocation)) {
-                    // Already at target, just wait this tick
-                    refresh.run();
-                    return true; // Command processed
+                if (!getLocation().equals(targetLocation)) {
+                    // Move one step toward the target
+                    Location nextStep = getNextStepToward(targetLocation);
+                    if (nextStep != null && canMove(nextStep, grid)) {
+                        setLocation(nextStep);
+                        System.out.println("[Bomber Debug] Moved one step to: " + nextStep + " (target: " + targetLocation + ")");
+                        refresh.run();
+                    } else {
+                        System.out.println("[Bomber Debug] Cannot move toward: " + targetLocation + " (blocked or invalid)");
+                    }
+                } else {
+                    System.out.println("[Bomber Debug] Already at target: " + targetLocation);
                 }
-
-                // Need to move to target location
-                if (!isBusy()) {
-                    // Use the same movement logic as manual mode
-                    super.startMoveToTarget(targetLocation, grid);
-
-                    // Set flags for auto mode movement (no return to start needed)
-                    movingToBomb = true;
-                    returningToStart = false; // Auto mode doesn't return to start
-                    bombTarget = targetLocation;
-
-                    refresh.run();
-                }
-                // Don't mark as processed until movement is complete
-                return false; // Still processing this command
-
+                return true; // Command processed, move to next command
             } catch (NumberFormatException e) {
                 System.err.println("Invalid bomber movement command: " + currentMove);
-                return true; // Skip invalid command
+                return true; // Skip invalid commands
             }
         }
 
-        return true; // Unknown command format, skip it
+        return true; // Skip unknown commands
+    }
+
+    /**
+     * Calculate the next step toward a target location (one step per tick)
+     */
+    private Location getNextStepToward(Location target) {
+        Location current = getLocation();
+        int currentX = current.getX();
+        int currentY = current.getY();
+        int targetX = target.getX();
+        int targetY = target.getY();
+
+        // Calculate direction (one step at a time)
+        int deltaX = Integer.signum(targetX - currentX);
+        int deltaY = Integer.signum(targetY - currentY);
+
+        // Move one step toward target (prioritize X movement, then Y)
+        if (deltaX != 0) {
+            return new Location(currentX + deltaX, currentY);
+        } else if (deltaY != 0) {
+            return new Location(currentX, currentY + deltaY);
+        }
+
+        return current; // Already at target
     }
 
     /**
@@ -204,9 +230,5 @@ public class Bomber extends Machine {
 
     public List<Bomb> getBombs() {
         return bombs;
-    }
-
-    public boolean isReturningToStart() {
-        return returningToStart;
     }
 }
