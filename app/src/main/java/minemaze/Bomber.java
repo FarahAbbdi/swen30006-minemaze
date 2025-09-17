@@ -52,20 +52,29 @@ public class Bomber extends Machine {
         super.startMoveToTarget(target, grid);
         outboundPath.addAll(movePath); // Save the path before moving
         movingToBomb = true;
-        returningToStart = false;
+        returningToStart = true; // Manual mode requires return to start
     }
 
     public void handleMovement() {
         if (movingToBomb) {
             if (stepMove()) {
+                // Reached destination or stopped due to obstacle
                 placeBombAtCurrentLocation();
-                // Return home using the same path in reverse
-                movePath.clear();
-                movePath.addAll(reversePath(outboundPath));
-                movePathIndex = 0;
-                isMoving = true;
-                movingToBomb = false;
-                returningToStart = true;
+
+                if (returningToStart) {
+                    // Manual mode: return home using the same path in reverse
+                    movePath.clear();
+                    if (outboundPath != null) {
+                        movePath.addAll(reversePath(outboundPath));
+                        movePathIndex = 0;
+                        isMoving = true;
+                    }
+                    movingToBomb = false;
+                } else {
+                    // Auto mode: movement complete, ready for next command
+                    movingToBomb = false;
+                    bombTarget = null;
+                }
             }
         } else if (returningToStart) {
             if (stepMove()) {
@@ -111,32 +120,62 @@ public class Bomber extends Machine {
     }
 
     /**
-     * For auto mode: instantly move and place bomb if needed.
+     * For auto mode: process movement commands and bomb placement using same logic as manual mode
+     * Returns true if command was processed and we can move to next command
      */
-    public void autoMoveNext(int autoMovementIndex, String bombCommand, Runnable refresh) {
-        if (controls != null && autoMovementIndex < controls.size()) {
-            String currentMove = controls.get(autoMovementIndex);
-            String[] parts = currentMove.split("-");
+    public boolean autoMoveNext(int autoMovementIndex, String bombCommand, Runnable refresh) {
+        if (controls == null || autoMovementIndex >= controls.size()) {
+            return false; // No more commands
+        }
 
-            if (currentMove.equals(bombCommand)) {
-                if (bombsAvailable > 0) {
-                    Bomb bomb = new Bomb(getLocation(), 6, 1, this, grid);
-                    bombs.add(bomb);
-                    bombsAvailable--;
-                    grid.addActor(bomb, getLocation());
-                    bomb.use(this);
-                    refresh.run();
-                }
-                return;
-            }
+        String currentMove = controls.get(autoMovementIndex);
 
-            if (parts.length == 2) {
-                int bombX = Integer.parseInt(parts[0]);
-                int bombY = Integer.parseInt(parts[1]);
-                setLocation(new Location(bombX, bombY));
+        // Check if this is a bomb command
+        if (currentMove.equals(bombCommand)) {
+            if (bombsAvailable > 0) {
+                placeBombAtCurrentLocation();
                 refresh.run();
             }
+            return true; // Command processed
         }
+
+        // Process movement command (format: "x-y")
+        String[] parts = currentMove.split("-");
+        if (parts.length == 2) {
+            try {
+                int targetX = Integer.parseInt(parts[0]);
+                int targetY = Integer.parseInt(parts[1]);
+                Location targetLocation = new Location(targetX, targetY);
+
+                // Check if we're already at the target location
+                if (getLocation().equals(targetLocation)) {
+                    // Already at target, just wait this tick
+                    refresh.run();
+                    return true; // Command processed
+                }
+
+                // Need to move to target location
+                if (!isBusy()) {
+                    // Use the same movement logic as manual mode
+                    super.startMoveToTarget(targetLocation, grid);
+
+                    // Set flags for auto mode movement (no return to start needed)
+                    movingToBomb = true;
+                    returningToStart = false; // Auto mode doesn't return to start
+                    bombTarget = targetLocation;
+
+                    refresh.run();
+                }
+                // Don't mark as processed until movement is complete
+                return false; // Still processing this command
+
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid bomber movement command: " + currentMove);
+                return true; // Skip invalid command
+            }
+        }
+
+        return true; // Unknown command format, skip it
     }
 
     /**

@@ -49,35 +49,40 @@ public class Bomb extends Actor implements Usable {
 
         isActive = false;
 
-        // Remove obstacles in radius and reveal resources
         int x0 = getLocation().x;
         int y0 = getLocation().y;
 
-        for (int dx = -explosionRadius; dx <= explosionRadius; dx++) {
-            for (int dy = -explosionRadius; dy <= explosionRadius; dy++) {
-                int x = x0 + dx;
-                int y = y0 + dy;
-                Location loc = new Location(x, y);
+        // Center tile
+        int[][] directions = {
+                {0, 0}, // bomb's own tile
+                {0, -explosionRadius}, // up
+                {0, explosionRadius},  // down
+                {-explosionRadius, 0}, // left
+                {explosionRadius, 0}   // right
+        };
 
-                // Remove hard rocks and boulders in radius
-                Actor hardRock = grid.getOneActorAt(loc, minemaze.MineMaze.HardRock.class);
-                Actor boulder = grid.getOneActorAt(loc, minemaze.MineMaze.Rock.class);
-                if (hardRock != null) grid.removeActor(hardRock);
-                if (boulder != null) grid.removeActor(boulder);
+        for (int[] dir : directions) {
+            int x = x0 + dir[0];
+            int y = y0 + dir[1];
+            Location loc = new Location(x, y);
 
-                // Reveal resources (ore, booster, fuel) hidden beneath obstacles
-                Actor ore = grid.getOneActorAt(loc, minemaze.MineMaze.Ore.class);
-                Actor booster = grid.getOneActorAt(loc, minemaze.MineMaze.Booster.class);
-                Actor fuel = grid.getOneActorAt(loc, minemaze.MineMaze.Fuel.class);
-                if (ore != null) ore.show();
-                if (booster != null) booster.show();
-                if (fuel != null) fuel.show();
-            }
+            // Remove hard rocks and boulders in radius
+            Actor hardRock = grid.getOneActorAt(loc, minemaze.MineMaze.HardRock.class);
+            Actor boulder = grid.getOneActorAt(loc, minemaze.MineMaze.Rock.class);
+            if (hardRock != null) grid.removeActor(hardRock);
+            if (boulder != null) grid.removeActor(boulder);
+
+            // Reveal resources (ore, booster, fuel) hidden beneath obstacles
+            Actor ore = grid.getOneActorAt(loc, minemaze.MineMaze.Ore.class);
+            Actor booster = grid.getOneActorAt(loc, minemaze.MineMaze.Booster.class);
+            Actor fuel = grid.getOneActorAt(loc, minemaze.MineMaze.Fuel.class);
+            if (ore != null) ore.show();
+            if (booster != null) booster.show();
+            if (fuel != null) fuel.show();
         }
 
         System.out.println("Bomb exploded at " + getLocation() + " with radius " + explosionRadius);
 
-        // Remove the bomb from the grid
         grid.removeActor(this);
     }
 

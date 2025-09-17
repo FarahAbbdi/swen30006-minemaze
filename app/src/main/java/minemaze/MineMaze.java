@@ -205,16 +205,21 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                     // Process pusher auto movement
                     pusher.autoMoveNext();
 
-                    // Process bomber auto movement - but don't increment index yet
+                    // Process bomber auto movement
                     if (bomber != null) {
-                        bomber.autoMoveNext(autoMovementIndex, BOMB_COMMAND, this::refresh);
+                        boolean commandProcessed = bomber.autoMoveNext(autoMovementIndex, BOMB_COMMAND, this::refresh);
+
+                        // Only increment if command was fully processed
+                        if (commandProcessed) {
+                            autoMovementIndex++;
+                        }
+                    } else {
+                        // No bomber, still increment to keep pusher and bomber in sync
+                        autoMovementIndex++;
                     }
 
                     // Execute pusher path movement
                     executeNextPathStep();
-
-                    // Increment movement index for next iteration
-                    autoMovementIndex++;
                 } else {
                     // Manual mode - just execute pusher path steps
                     executeNextPathStep();
