@@ -220,6 +220,8 @@ public class MineMaze extends GameGrid implements GGMouseListener {
 
                     // Execute pusher path movement
                     executeNextPathStep();
+                    // Increment movement index for next iteration
+                    autoMovementIndex++;
                 } else {
                     // Manual mode - just execute pusher path steps
                     executeNextPathStep();
