@@ -103,18 +103,8 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         this.oresWinning = cfg.oresWinning;
         this.pusherFuel = cfg.initialFuel;
 
-        // Draw static board + extras (collectibles placed from properties)
-        boardRenderer.drawBoard(getBg(), grid);
-        new ActorFactory(this, grid, cfg.maxBombs)
-                .spawnExtra(cfg.oreLocations, cfg.fuelLocations, cfg.boosterLocations);
-
-        // Spawn grid-based actors (pusher / targets / rocks / bomber)
-        new ActorFactory(this, grid, cfg.maxBombs).spawnGridActors();
-
-        // HUD & input
-        getBg().setFont(new Font("Arial", Font.BOLD, 14));
-        hud.drawControlsHelp(getBg(), 30, nbVertCells);
-        addMouseListener(this, GGMouse.lPress | GGMouse.rPress);
+        // (Minimal diff) No board/actors/HUD/mouse setup here.
+        // That work is performed at the start of runApp(), matching legacy timing.
     }
 
     // =========================================================================
@@ -127,6 +117,15 @@ public class MineMaze extends GameGrid implements GGMouseListener {
      * @return textual log of state used by tests (win/lose string appended at end)
      */
     public String runApp(boolean showUI) {
+        // (Minimal diff) Setup moved here to match original behavior
+        boardRenderer.drawBoard(getBg(), grid);
+        ActorFactory factory = new ActorFactory(this, grid, cfg.maxBombs);
+        factory.spawnExtra(cfg.oreLocations, cfg.fuelLocations, cfg.boosterLocations);
+        factory.spawnGridActors();
+        getBg().setFont(new Font("Arial", Font.BOLD, 14));
+        hud.drawControlsHelp(getBg(), 30, nbVertCells);
+        addMouseListener(this, GGMouse.lPress | GGMouse.rPress);
+
         if (showUI) show();
         if (cfg.autoMode) doRun(); // jGameGrid internal run
 
