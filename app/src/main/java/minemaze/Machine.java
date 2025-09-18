@@ -57,10 +57,10 @@ public abstract class Machine extends Actor {
                 }
 
                 if (nextStep != null) {
-                    Actor hardrock = grid.getOneActorAt(nextStep, minemaze.MineMaze.HardRock.class);
-                    Actor rock = grid.getOneActorAt(nextStep, minemaze.MineMaze.Rock.class);
-                    Actor ore = grid.getOneActorAt(nextStep, minemaze.MineMaze.Ore.class);
-                    Actor wall = grid.getOneActorAt(nextStep, minemaze.MineMaze.Wall.class);
+                    Actor hardrock = grid.getOneActorAt(nextStep, minemaze.HardRock.class);
+                    Actor rock = grid.getOneActorAt(nextStep, minemaze.Rock.class);
+                    Actor ore = grid.getOneActorAt(nextStep, minemaze.Ore.class);
+                    Actor wall = grid.getOneActorAt(nextStep, minemaze.Wall.class);
 
                     if (hardrock != null || rock != null) {
                         // Hit hardrock or rock - stop here and allow bomb drop only if we've moved
@@ -131,9 +131,9 @@ public abstract class Machine extends Actor {
         }
 
         // Check for walls and rocks
-        Actor wall = grid.getOneActorAt(location, minemaze.MineMaze.Wall.class);
-        Actor rock = grid.getOneActorAt(location, minemaze.MineMaze.Rock.class);
-        Actor hardRock = grid.getOneActorAt(location, minemaze.MineMaze.HardRock.class);
+        Actor wall = grid.getOneActorAt(location, minemaze.Wall.class);
+        Actor rock = grid.getOneActorAt(location, minemaze.Rock.class);
+        Actor hardRock = grid.getOneActorAt(location, minemaze.HardRock.class);
 
         return wall == null && rock == null && hardRock == null;
     }

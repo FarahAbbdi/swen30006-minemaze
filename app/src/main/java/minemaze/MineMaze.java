@@ -42,83 +42,6 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         }
     }
 
-    private class Target extends Actor {
-        public Target() {
-            super("sprites/target.gif");
-        }
-    }
-
-    protected class Ore extends Actor {
-        public Ore() {
-            super("sprites/ore.png", 2);
-        }
-    }
-
-    protected class Pusher extends Actor {
-        private List<String> controls = null;
-
-        public Pusher() {
-            super(true, "sprites/pusher.png");  // Rotatable
-        }
-
-        public void setupPusher(boolean isAutoMode, List<String> pusherControls) {
-            this.controls = pusherControls;
-        }
-
-        /**
-         * Method to move pusher automatically based on the instructions input from properties file
-         */
-        public void autoMoveNext() {
-            if (controls != null && autoMovementIndex < controls.size()) {
-                String currentMove = controls.get(autoMovementIndex);
-                String[] parts = currentMove.split("-");
-
-                if (parts.length == 2) {
-                    int targetX = Integer.parseInt(parts[0]);
-                    int targetY = Integer.parseInt(parts[1]);
-                    Location targetLocation = new Location(targetX, targetY);
-
-                    if (isFinished)
-                        return;
-
-                    // Guide pusher to target location
-                    MineMaze.this.guidePusherToLocation(targetLocation);
-                }
-            }
-        }
-    }
-
-
-    protected class Rock extends Actor {
-        public Rock() {
-            super("sprites/rock.png");
-        }
-    }
-
-    protected class Wall extends Actor {
-        public Wall() {
-            super("sprites/wall.png");
-        }
-    }
-
-    protected class Booster extends Actor {
-        public Booster() {
-            super("sprites/booster.png");
-        }
-    }
-
-    protected class Fuel extends Actor {
-        public Fuel() {
-            super("sprites/fuel.png");
-        }
-    }
-
-    protected class HardRock extends Actor {
-        public HardRock() {
-            super("sprites/hard_rock.png");
-        }
-    }
-
     public static final String BOMB_COMMAND = "Bomb";
 
     // ------------- End of inner classes ------
@@ -153,6 +76,9 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     private boolean boosterReady = false;   // true after pickup, before use
     private int boosterCharges = 0;         // will be 3 when picked, decremented later when used
     private boolean boosterActivated = false; // flips true on first use
+
+    // TODO: Temp Getter for isfinished()
+    public boolean isFinished() { return isFinished; }
 
     public MineMaze(Properties properties, MapGrid grid) {
         super(grid.getNbHorzCells(), grid.getNbVertCells(), 30, false);
@@ -213,8 +139,9 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                 setTitle(generateGameTitle(gameDuration));
 
                 if (isAutoMode) {
-                    // Process pusher auto movement
-                    pusher.autoMoveNext();
+                    if (pusher != null) {
+                        pusher.autoMoveNext(autoMovementIndex);
+                    }
 
                     // Process bomber auto movement
                     bomber.autoMoveNext(autoMovementIndex, BOMB_COMMAND, this::refresh);
@@ -320,7 +247,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
                 Location location = new Location(x, y);
                 ElementType a = grid.getCell(location);
                 if (a == ElementType.PUSHER) {
-                    pusher = new Pusher();
+                    pusher = new Pusher(this);
                     addActor(pusher, location);
                     pusher.setupPusher(isAutoMode, pusherControls);
                 }
@@ -389,7 +316,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         return true;
     }
 
-    private void guidePusherToLocation(Location target) {
+    public void guidePusherToLocation(Location target) {
         if (pusher == null || isFinished) {
             return;
         }

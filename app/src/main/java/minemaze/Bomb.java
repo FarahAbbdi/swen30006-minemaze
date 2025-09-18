@@ -67,15 +67,15 @@ public class Bomb extends Actor implements Usable {
             Location loc = new Location(x, y);
 
             // Remove hard rocks and boulders in radius
-            Actor hardRock = grid.getOneActorAt(loc, minemaze.MineMaze.HardRock.class);
-            Actor boulder = grid.getOneActorAt(loc, minemaze.MineMaze.Rock.class);
+            Actor hardRock = grid.getOneActorAt(loc, minemaze.HardRock.class);
+            Actor boulder = grid.getOneActorAt(loc, minemaze.Rock.class);
             if (hardRock != null) grid.removeActor(hardRock);
             if (boulder != null) grid.removeActor(boulder);
 
             // Reveal resources (ore, booster, fuel) hidden beneath obstacles
-            Actor ore = grid.getOneActorAt(loc, minemaze.MineMaze.Ore.class);
-            Actor booster = grid.getOneActorAt(loc, minemaze.MineMaze.Booster.class);
-            Actor fuel = grid.getOneActorAt(loc, minemaze.MineMaze.Fuel.class);
+            Actor ore = grid.getOneActorAt(loc, minemaze.Ore.class);
+            Actor booster = grid.getOneActorAt(loc, minemaze.Booster.class);
+            Actor fuel = grid.getOneActorAt(loc, minemaze.Fuel.class);
             if (ore != null) ore.show();
             if (booster != null) booster.show();
             if (fuel != null) fuel.show();

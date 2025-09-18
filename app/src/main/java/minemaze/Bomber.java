@@ -210,7 +210,7 @@ public class Bomber extends Machine {
     @Override
     protected boolean canMove(Location location, GameGrid grid) {
         // Check for ore - bomber cannot push ore
-        Actor ore = grid.getOneActorAt(location, minemaze.MineMaze.Ore.class);
+        Actor ore = grid.getOneActorAt(location, minemaze.Ore.class);
         if (ore != null) {
             return false;
         }
