@@ -101,6 +101,9 @@ public class MineMaze extends GameGrid implements GGMouseListener {
         this.gameDuration = cfg.durationSeconds;
         this.oresWinning = cfg.oresWinning;
         this.pusherFuel = cfg.initialFuel;
+
+        // (Minimal diff) No board/actors/HUD/mouse setup here.
+        // That work is performed at the start of runApp(), matching legacy timing.
     }
 
     // =========================================================================
@@ -276,7 +279,7 @@ public class MineMaze extends GameGrid implements GGMouseListener {
 
             // Pickup: Fuel → refill
             Fuel can = (Fuel) getOneActorAt(pusher.getLocation(), Fuel.class);
-            if (can != null) { can.removeSelf(); pusherFuel = pusherFuel + fuelRefillAmount;
+            if (can != null) { can.removeSelf(); pusherFuel = pusherFuel + fuelRefillAmount; }
 
             // Pickup: Booster → 3 charges
             Booster booster = (Booster) getOneActorAt(pusher.getLocation(), Booster.class);
