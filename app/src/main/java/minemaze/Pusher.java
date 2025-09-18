@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Pusher actor with path planning, movement, fuel, and booster logic migrated from MineMaze.
  */
-public class Pusher extends Actor {
+public class Pusher extends Machine {
     private List<String> controls = null;
     private final MineMaze controller;
 
@@ -67,7 +67,7 @@ public class Pusher extends Actor {
             int dx = target.x > start.x ? 1 : -1;
             for (int x = start.x + dx; x != target.x + dx; x += dx) {
                 Location step = new Location(x, start.y);
-                if (canMove(step)) pusherPath.add(step); else break;
+                if (canMove(step, controller)) pusherPath.add(step); else break;
             }
         }
         // Vertical leg
@@ -76,7 +76,7 @@ public class Pusher extends Actor {
             int dy = target.y > last.y ? 1 : -1;
             for (int y = last.y + dy; y != target.y + dy; y += dy) {
                 Location step = new Location(last.x, y);
-                if (canMove(step)) pusherPath.add(step); else break;
+                if (canMove(step, controller)) pusherPath.add(step); else break;
             }
         }
     }
@@ -101,7 +101,7 @@ public class Pusher extends Actor {
         Rock rockAtNext = (Rock) controller.getOneActorAt(next, Rock.class);
         if (rockAtNext != null && boosterReady && boosterCharges > 0) {
             Location pushTo = next.getNeighbourLocation(getDirection());
-            if (canMove(pushTo)) {
+            if (canMove(pushTo, controller)) {
                 rockAtNext.setLocation(pushTo);
                 if (!boosterActivated && boosterCharges == 3) boosterActivated = true;
                 if (--boosterCharges == 0) boosterReady = false;
@@ -197,7 +197,8 @@ public class Pusher extends Actor {
         if (newT != null) { controller.incrementOresCollected(); ore.hide(); }
     }
 
-    private boolean canMove(Location loc) {
+    @Override
+    protected boolean canMove(Location loc, GameGrid grid) {
         Color c = controller.getBg().getColor(loc);
         if (c.equals(controller.getBorderColor())) return false;
         if (controller.getOneActorAt(loc, Wall.class) != null) return false;

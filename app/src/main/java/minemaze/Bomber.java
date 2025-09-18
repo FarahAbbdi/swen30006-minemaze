@@ -49,7 +49,7 @@ public class Bomber extends Machine {
         bombTarget = target;
         outboundPath = new ArrayList<>(); // Reset outbound path
         // Use Machine's movement logic but save the path
-        super.startMoveToTarget(target, grid);
+        startMoveToTarget(target, grid);
         outboundPath.addAll(movePath); // Save the path before moving
         movingToBomb = true;
         returningToStart = true; // Manual mode requires return to start
@@ -178,6 +178,78 @@ public class Bomber extends Machine {
         }
 
         return true; // Skip unknown commands
+    }
+
+    /**
+     * Start movement toward a target location
+     * Calculates a path going horizontally then vertically
+     */
+    public void startMoveToTarget(Location target, GameGrid grid) {
+        movePath.clear();
+        movePathIndex = 0;
+        Location current = getLocation();
+        movePath.add(current); // Add initial position to path
+
+        boolean moveHorizontally = true; // Start with horizontal move
+
+        while (!current.equals(target)) {
+            boolean moved = false;
+
+            // Try both axes (horizontal and vertical)
+            for (int attempt = 0; attempt < 2; attempt++) {
+                Location nextStep = null;
+
+                if (moveHorizontally && current.x != target.x) {
+                    int dx = current.x < target.x ? 1 : -1;
+                    nextStep = new Location(current.x + dx, current.y);
+                } else if (!moveHorizontally && current.y != target.y) {
+                    int dy = current.y < target.y ? 1 : -1;
+                    nextStep = new Location(current.x, current.y + dy);
+                }
+
+                if (nextStep != null) {
+                    Actor hardrock = grid.getOneActorAt(nextStep, minemaze.HardRock.class);
+                    Actor rock = grid.getOneActorAt(nextStep, minemaze.Rock.class);
+                    Actor ore = grid.getOneActorAt(nextStep, minemaze.Ore.class);
+                    Actor wall = grid.getOneActorAt(nextStep, minemaze.Wall.class);
+
+                    if (hardrock != null || rock != null) {
+                        // Hit hardrock or rock - stop here and allow bomb drop only if we've moved
+                        isMoving = movePath.size() > 1;
+                        return;
+                    } else if (wall != null) {
+                        // Hit wall - try the other axis instead of stopping
+                        moveHorizontally = !moveHorizontally;
+                        continue;
+                    } else if (ore != null) {
+                        // Hit ore - try the other axis (bomber can't push ore)
+                        moveHorizontally = !moveHorizontally;
+                        continue;
+                    } else if (canMove(nextStep, grid)) {
+                        // Path is clear - move to this location
+                        movePath.add(nextStep);
+                        current = nextStep;
+                        moved = true;
+                        break;
+                    } else {
+                        // Other obstacle - try the other axis
+                        moveHorizontally = !moveHorizontally;
+                        continue;
+                    }
+                }
+
+                // Switch to the other axis for next attempt
+                moveHorizontally = !moveHorizontally;
+            }
+
+            if (!moved) {
+                // No movement possible in either direction - stop
+                break;
+            }
+        }
+
+        // Set moving state based on whether we have a valid path
+        isMoving = movePath.size() > 1;
     }
 
     /**
