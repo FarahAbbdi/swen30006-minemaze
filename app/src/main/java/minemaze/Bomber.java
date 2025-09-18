@@ -204,6 +204,8 @@ public class Bomber extends Machine {
         return current; // Already at target
     }
 
+
+
     /**
      * Bomber cannot move through ore (unlike Pusher which can push ore)
      */
