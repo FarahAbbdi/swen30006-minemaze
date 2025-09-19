@@ -112,7 +112,7 @@ public class Bomber extends Machine {
             return;
         }
 
-        Bomb bomb = new Bomb(getLocation(), 6, 1, this, grid);
+        Bomb bomb = new Bomb(getLocation(), 6, 1, grid);
         bombs.add(bomb);
         bombsAvailable--;
         grid.addActor(bomb, getLocation());

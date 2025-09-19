@@ -6,20 +6,18 @@ import ch.aplu.jgamegrid.GameGrid;
 
 public class Bomb extends Actor implements Usable {
     private int fuseTicksRemaining;
-    private int explosionRadius;
+    private final int explosionRadius;
     private boolean isActive;
     private boolean isArmed;
-    private Machine placedBy;
-    private GameGrid grid;
+    private final GameGrid grid;
 
-    public Bomb(Location location, int fuseTicks, int explosionRadius, Machine placedBy, GameGrid grid) {
+    public Bomb(Location location, int fuseTicks, int explosionRadius, GameGrid grid) {
         super("sprites/bomb.png");
         setLocation(location);
         this.fuseTicksRemaining = fuseTicks;
         this.explosionRadius = explosionRadius;
         this.isActive = true;
         this.isArmed = false;
-        this.placedBy = placedBy;
         this.grid = grid;
     }
 
@@ -90,19 +88,5 @@ public class Bomb extends Actor implements Usable {
         return isActive;
     }
 
-    public boolean isArmed() {
-        return isArmed;
-    }
 
-    public int getFuseTicksRemaining() {
-        return fuseTicksRemaining;
-    }
-
-    public int getExplosionRadius() {
-        return explosionRadius;
-    }
-
-    public Machine getPlacedBy() {
-        return placedBy;
-    }
 }
