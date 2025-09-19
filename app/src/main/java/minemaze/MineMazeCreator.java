@@ -1,54 +1,23 @@
 package minemaze;
 
-import ch.aplu.jgamegrid.GGBackground;
 import ch.aplu.jgamegrid.Location;
-
-import java.awt.*;
 
 /**
  * MineMazeCreator
  * ----------------
- * Minimal creator (GRASP Creator) that:
- *  - draws the static board
- *  - spawns grid-based actors (pusher/targets/rocks/bomber)
- *  - spawns extra collectibles from properties (ore/fuel/booster)
- *
- * No GoF factory patterns; just concentrated construction logic.
+ * GRASP Creator for game actors only.
+ * - Spawns grid-based actors (pusher/targets/rocks/bomber)
+ * - Spawns extra collectibles from properties (ore/fuel/booster)
+ * (No board rendering here.)
  */
 public final class MineMazeCreator {
     private MineMazeCreator() {}
 
-    public static void setup(MineMaze game, GameConfig cfg, MapGrid grid) {
-        // 1) Draw board
-        drawBoard(game.getBg(), grid, game.getBorderColor());
-
-        // 2) Spawn extras from properties
+    /** Create all actors for this game. */
+    public static void createActors(MineMaze game, GameConfig cfg, MapGrid grid) {
         spawnExtras(game, cfg);
-
-        // 3) Spawn grid-based actors defined by the map
         spawnGridActors(game, grid, cfg.maxBombs);
-
-        // Paint order so targets show beneath ores
-        game.setPaintOrder(Target.class);
-    }
-
-    private static void drawBoard(GGBackground bg, MapGrid grid, Color borderColor) {
-        int w = grid.getNbHorzCells();
-        int h = grid.getNbVertCells();
-        bg.clear(new Color(230, 230, 230));
-        bg.setPaintColor(Color.darkGray);
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                Location loc = new Location(x, y);
-                MineMaze.ElementType t = grid.getCell(loc);
-                if (t != MineMaze.ElementType.OUTSIDE) {
-                    bg.fillCell(loc, Color.lightGray);
-                }
-                if (t == MineMaze.ElementType.BORDER) {
-                    bg.fillCell(loc, borderColor);
-                }
-            }
-        }
+        game.setPaintOrder(Target.class); // ensure target paints under ore
     }
 
     private static void spawnExtras(MineMaze game, GameConfig cfg) {
@@ -90,7 +59,7 @@ public final class MineMazeCreator {
                     case PUSHER -> {
                         Pusher p = new Pusher(game);
                         game.addActor(p, loc);
-                        game.onPusherCreated(p); // inject scripts into pusher
+                        game.onPusherCreated(p); // inject controls
                     }
                     case TARGET -> game.addActor(new Target(), loc);
                     case BOULDER -> game.addActor(new Rock(), loc);
@@ -99,9 +68,9 @@ public final class MineMazeCreator {
                     case BOMBER -> {
                         Bomber b = new Bomber(loc, maxBombs, game);
                         game.addActor(b, loc);
-                        game.onBomberCreated(b); // inject scripts/border color
+                        game.onBomberCreated(b); // inject controls/border color
                     }
-                    default -> { /* ignore others */ }
+                    default -> { /* ignore */ }
                 }
             }
         }

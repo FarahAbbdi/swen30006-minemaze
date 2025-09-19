@@ -39,9 +39,12 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     private final int nbVertCells;
     private final Color borderColor = new Color(100, 100, 100);
 
-    // Helpers for configuration and rendering
-    private final GameConfig cfg;
+    // Rendering & HUD
+    private final BoardRenderer boardRenderer = new BoardRenderer(borderColor);
     private final HudRenderer hud = new HudRenderer();
+
+    // Config
+    private final GameConfig cfg;
 
     // Primary actors
     private Pusher pusher;
@@ -70,9 +73,13 @@ public class MineMaze extends GameGrid implements GGMouseListener {
     }
 
     public String runApp(boolean showUI) {
-        // Centralized creation (GRASP Creator), no GoF factory
-        MineMazeCreator.setup(this, cfg, grid);
+        // Draw the static board (rendering responsibility stays in BoardRenderer)
+        boardRenderer.drawBoard(getBg(), grid);
 
+        // Create actors (creation responsibility is in MineMazeCreator)
+        MineMazeCreator.createActors(this, cfg, grid);
+
+        // HUD & input (unchanged)
         getBg().setFont(new Font("Arial", Font.BOLD, 14));
         hud.drawControlsHelp(getBg(), 30, nbVertCells);
         addMouseListener(this, GGMouse.lPress | GGMouse.rPress);
